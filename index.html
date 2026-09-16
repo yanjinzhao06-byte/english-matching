@@ -1497,7 +1497,7 @@
           osc.type = "sine";
           osc.frequency.setValueAtTime(freq, now + i * 0.055);
           gain.gain.setValueAtTime(0.0001, now + i * 0.055);
-          gain.gain.exponentialRampToValueAtTime(0.08, now + i * 0.055 + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + i * 0.055 + 0.015);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.055 + 0.16);
           osc.connect(gain);
           gain.connect(ctx.destination);
@@ -1516,7 +1516,7 @@
         osc.frequency.setValueAtTime(420, now);
         osc.frequency.exponentialRampToValueAtTime(340, now + 0.08);
         gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.035, now + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
         osc.connect(gain);
         gain.connect(ctx.destination);
