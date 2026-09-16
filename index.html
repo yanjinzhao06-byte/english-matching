@@ -943,6 +943,45 @@
       color: #e2557f;
     }
 
+    .word-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .word-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .word-field > span {
+      color: #b15f8d;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .word-field textarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      border: 2px solid #ffd9ec;
+      border-radius: 18px;
+      padding: 11px 12px;
+      font: inherit;
+      font-size: 16px;
+      color: #5b4b63;
+      background: #fffafd;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .word-field textarea:focus {
+      border-color: #ff9fc8;
+      box-shadow: 0 0 0 5px rgba(255, 159, 200, 0.2);
+    }
+
     .calendar-sheet {
       max-width: 440px;
     }
@@ -1083,7 +1122,7 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wordBankTitle">
       <h2 id="wordBankTitle">📚 我的词库</h2>
       <p class="hint">
-        每行一组单词，格式：<b>英语, 中文</b> 或 <b>英语 中文</b>。
+        左边填英文，右边填中文，一行对应一个词。上传图片后会自动分类填入。
       </p>
       <label class="upload-box" for="imageUpload">
         <span class="upload-icon">📷</span>
@@ -1094,7 +1133,16 @@
         <input id="imageUpload" type="file" accept="image/*" />
       </label>
       <div class="ocr-status" id="ocrStatus" aria-live="polite"></div>
-      <textarea id="wordBankInput" spellcheck="false" placeholder="apple, 苹果&#10;cat, 猫&#10;sunshine, 阳光"></textarea>
+      <div class="word-inputs">
+        <label class="word-field">
+          <span>English</span>
+          <textarea id="englishInput" spellcheck="false" placeholder="apple&#10;cat&#10;book"></textarea>
+        </label>
+        <label class="word-field">
+          <span>中文</span>
+          <textarea id="chineseInput" spellcheck="false" placeholder="苹果&#10;猫&#10;书"></textarea>
+        </label>
+      </div>
       <div class="sheet-meta">
         <span id="wordCount">0 组单词</span>
         <span class="sheet-error" id="wordBankError"></span>
@@ -1170,7 +1218,8 @@
       const calendarBtn = document.getElementById("calendarBtn");
       const wordBankBtn = document.getElementById("wordBankBtn");
       const wordBankOverlay = document.getElementById("wordBankOverlay");
-      const wordBankInput = document.getElementById("wordBankInput");
+      const englishInput = document.getElementById("englishInput");
+      const chineseInput = document.getElementById("chineseInput");
       const wordCount = document.getElementById("wordCount");
       const wordBankError = document.getElementById("wordBankError");
       const saveWordBankBtn = document.getElementById("saveWordBank");
@@ -1218,52 +1267,40 @@
         }
       }
 
-      function pairsToText(pairs) {
-        return pairs
-          .map((pair) => [pair.en, pair.zh].filter(Boolean).join(", "))
-          .join("\n");
+      function parseColumn(text) {
+        return text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
       }
 
-      function parsePairs(text) {
-        const lines = text.split(/\r?\n/);
-        const pairs = [];
-        const errorLines = [];
+      function pairsToEnglishText(pairs) {
+        return pairs.map((pair) => pair.en).join("\n");
+      }
 
-        lines.forEach((rawLine, index) => {
-          const line = rawLine.trim();
-          if (!line) return;
+      function pairsToChineseText(pairs) {
+        return pairs.map((pair) => pair.zh).join("\n");
+      }
 
-          let parts = line.split(/\t|，|,|＝|=|\|/);
-          if (parts.length < 2) {
-            parts = line.split(/\s+/);
-          }
-
-          parts = parts.map((part) => part.trim()).filter(Boolean);
-          if (parts.length < 2) {
-            errorLines.push(index + 1);
-            return;
-          }
-
-          pairs.push({
-            en: parts[0],
-            zh: parts[1]
-          });
-        });
-
-        return { pairs, errorLines };
+      function fillWordInputs(pairs) {
+        englishInput.value = pairsToEnglishText(pairs);
+        chineseInput.value = pairsToChineseText(pairs);
+        updateWordCount();
       }
 
       function updateWordCount() {
-        const { pairs, errorLines } = parsePairs(wordBankInput.value);
-        wordCount.textContent = `${pairs.length} 组单词`;
-        wordBankError.textContent = errorLines.length
-          ? `第 ${errorLines.join("、")} 行格式不对`
-          : "";
+        const englishLines = parseColumn(englishInput.value);
+        const chineseLines = parseColumn(chineseInput.value);
+        const count = Math.min(englishLines.length, chineseLines.length);
+        wordCount.textContent = `${count} 组单词`;
+        wordBankError.textContent =
+          englishLines.length !== chineseLines.length
+            ? `英文 ${englishLines.length} 个，中文 ${chineseLines.length} 个，数量不一致`
+            : "";
       }
 
       function openWordBank() {
-        wordBankInput.value = pairsToText(currentPairs);
-        updateWordCount();
+        fillWordInputs(currentPairs);
         wordBankError.textContent = "";
         wordBankOverlay.classList.add("open");
         wordBankOverlay.setAttribute("aria-hidden", "false");
@@ -1733,8 +1770,7 @@
             return;
           }
 
-          wordBankInput.value = pairsToText(pairs);
-          updateWordCount();
+          fillWordInputs(pairs);
           setOcrStatus(`识别完成，已生成 ${pairs.length} 组单词，请检查后保存`, "success");
         } catch (err) {
           setOcrStatus(`识别失败：${err.message || "请检查网络"}`, "error");
@@ -1902,23 +1938,32 @@
         }
       });
 
-      wordBankInput.addEventListener("input", updateWordCount);
+      englishInput.addEventListener("input", updateWordCount);
+      chineseInput.addEventListener("input", updateWordCount);
 
       resetWordsBtn.addEventListener("click", () => {
-        wordBankInput.value = pairsToText(DEFAULT_PAIRS);
-        updateWordCount();
+        fillWordInputs(DEFAULT_PAIRS);
         wordBankError.textContent = "";
         tapHaptic();
       });
 
       saveWordBankBtn.addEventListener("click", () => {
-        const { pairs, errorLines } = parsePairs(wordBankInput.value);
-        if (!pairs.length) {
+        const englishLines = parseColumn(englishInput.value);
+        const chineseLines = parseColumn(chineseInput.value);
+        if (!englishLines.length || !chineseLines.length) {
           wordBankError.textContent = "请至少输入一组单词";
           return;
         }
 
-        currentPairs = pairs;
+        if (englishLines.length !== chineseLines.length) {
+          wordBankError.textContent = `英文 ${englishLines.length} 个，中文 ${chineseLines.length} 个，数量不一致`;
+          return;
+        }
+
+        currentPairs = englishLines.map((en, index) => ({
+          en,
+          zh: chineseLines[index]
+        }));
         savePairs(currentPairs);
         closeWordBank();
         tapHaptic();
