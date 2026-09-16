@@ -761,8 +761,14 @@
 
     body.compact .status-row {
       flex: 0 0 auto;
+      flex-wrap: nowrap;
       gap: 8px;
       margin: 0 4px 8px;
+    }
+
+    body.compact .actions {
+      flex-wrap: nowrap;
+      gap: 6px;
     }
 
     body.compact .pill,
@@ -770,6 +776,17 @@
     body.compact .btn-soft {
       padding: 7px 11px;
       font-size: 12px;
+    }
+
+    body.compact .pill {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      padding: 6px 9px;
+      font-size: 11px;
+    }
+
+    body.compact .btn-icon {
+      flex: 0 0 auto;
     }
 
     body.compact .board {
@@ -854,6 +871,16 @@
 
     body.compact .win-message.show {
       transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 520px) {
+      .sheet {
+        padding: 16px;
+      }
+
+      .word-field textarea {
+        min-height: 150px;
+      }
     }
 
     .btn-icon {
