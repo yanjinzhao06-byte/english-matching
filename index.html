@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffeaf4" />
+  <title>英语单词连连看</title>
+  <style>
+    :root {
+      --bg-top: #fff3f8;
+      --bg-bottom: #eaf4ff;
+      --ink: #5b4b63;
+      --muted: #a89aae;
+      --en-bg: #fff;
+      --zh-bg: #fff;
+      --en-ring: #ffc9e2;
+      --zh-ring: #bfe0ff;
+      --shadow: 0 12px 26px rgba(180, 130, 170, 0.18);
+      --radius: 26px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: linear-gradient(165deg, var(--bg-top) 0%, #f7fbff 52%, var(--bg-bottom) 100%);
+      overflow-x: hidden;
+    }
+
+    body {
+      padding: max(18px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .game {
+      width: 100%;
+      max-width: 720px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      margin: 8px 0 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 7vw, 42px);
+      letter-spacing: 0.02em;
+      color: #ff7fae;
+      text-shadow: 0 3px 0 #fff, 0 5px 14px rgba(255, 127, 174, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 18px 4px 16px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 15px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(180, 130, 170, 0.12);
+      font-weight: 700;
+      font-size: 14px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .score {
+      color: #ff7fae;
+    }
+
+    .btn-restart {
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      color: #6e86a8;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px 15px;
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(180, 130, 170, 0.12);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-restart:active {
+      transform: scale(0.94);
+      box-shadow: 0 4px 10px rgba(180, 130, 170, 0.16);
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .btn-soft {
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      color: #b15f8d;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 10px 15px;
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(180, 130, 170, 0.12);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-soft:active {
+      transform: scale(0.94);
+      box-shadow: 0 4px 10px rgba(180, 130, 170, 0.16);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .column {
+      display: grid;
+      gap: 12px;
+    }
+
+    .column-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #b48bb0;
+      margin-bottom: 2px;
+    }
+
+    .card {
+      position: relative;
+      min-height: 76px;
+      border-radius: var(--radius);
+      background: var(--card-bg, #fff);
+      border: 3px solid var(--card-ring, #ffc9e2);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .card.en {
+      --card-ring: var(--en-ring);
+      background: linear-gradient(145deg, #ffffff, #fff6fb);
+    }
+
+    .card.zh {
+      --card-ring: var(--zh-ring);
+      background: linear-gradient(145deg, #ffffff, #f5faff);
+    }
+
+    .card .emoji {
+      font-size: 30px;
+      line-height: 1;
+      filter: drop-shadow(0 3px 4px rgba(120, 90, 120, 0.18));
+    }
+
+    .card .word {
+      font-size: clamp(17px, 4.6vw, 24px);
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .card.en .word {
+      color: #ff7fae;
+    }
+
+    .card.zh .word {
+      color: #4f93d8;
+    }
+
+    .card.selected {
+      border-color: #ffd166;
+      box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.35), var(--shadow);
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .card.matched {
+      pointer-events: none;
+      animation: pop-away 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .card.wrong {
+      animation: shake 0.38s ease;
+      border-color: #ff8fa3;
+      box-shadow: 0 0 0 4px rgba(255, 143, 163, 0.24), var(--shadow);
+    }
+
+    .card.jelly-press {
+      animation: jelly 0.26s ease;
+    }
+
+    .bubble {
+      position: fixed;
+      bottom: -90px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: inset -6px -8px 14px rgba(255, 183, 214, 0.18);
+      z-index: 0;
+      animation: float-up linear infinite;
+    }
+
+    .win-message {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.84);
+      border: 2px dashed #ffc9e2;
+      border-radius: 24px;
+      padding: 18px 20px;
+      margin: 22px 4px 0;
+      font-weight: 800;
+      color: #ff7fae;
+      font-size: 18px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .win-message.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(105, 76, 112, 0.24);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .overlay.open {
+      display: flex;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 30px;
+      padding: 22px;
+      box-shadow: 0 24px 60px rgba(120, 80, 120, 0.28);
+      animation: sheet-in 0.28s ease;
+    }
+
+    .sheet h2 {
+      margin: 0 0 8px;
+      color: #ff7fae;
+      font-size: 24px;
+    }
+
+    .sheet .hint {
+      margin: 0 0 14px;
+      color: #9b8aa2;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .sheet .hint b {
+      color: #ff7fae;
+      font-weight: 800;
+    }
+
+    #wordBankInput {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      border: 2px solid #ffd9ec;
+      border-radius: 20px;
+      padding: 14px 15px;
+      font: inherit;
+      font-size: 16px;
+      color: #5b4b63;
+      background: #fffafd;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #wordBankInput:focus {
+      border-color: #ff9fc8;
+      box-shadow: 0 0 0 4px rgba(255, 159, 200, 0.2);
+    }
+
+    .sheet-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      min-height: 20px;
+      color: #9b8aa2;
+      font-size: 13px;
+    }
+
+    .sheet-error {
+      color: #e2557f;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .sheet-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .sheet-actions button {
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 11px 17px;
+      touch-action: manipulation;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .sheet-actions button:active {
+      transform: scale(0.95);
+    }
+
+    .sheet-actions .primary {
+      color: #fff;
+      background: linear-gradient(135deg, #ff9fc8, #ff7fae);
+      box-shadow: 0 9px 20px rgba(255, 127, 174, 0.32);
+    }
+
+    .sheet-actions .ghost {
+      color: #9b7ea7;
+      background: #f7f1f7;
+    }
+
+    @keyframes sheet-in {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes jelly {
+      0% { transform: scale(1, 1); }
+      35% { transform: scale(0.9, 0.82); }
+      65% { transform: scale(1.07, 0.95); }
+      100% { transform: scale(1, 1); }
+    }
+
+    @keyframes pop-away {
+      0% { transform: scale(1); opacity: 1; }
+      35% { transform: scale(1.13, 0.9); opacity: 1; }
+      70% { transform: scale(1.18, 1.18); opacity: 0.92; }
+      100% { transform: scale(0.4); opacity: 0; }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(3px); }
+    }
+
+    @keyframes float-up {
+      from {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 0.85;
+      }
+      to {
+        transform: translateY(-115vh) translateX(18px) scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    @media (min-width: 560px) {
+      .board {
+        gap: 18px;
+      }
+
+      .column {
+        gap: 15px;
+      }
+
+      .card {
+        min-height: 92px;
+        border-radius: 30px;
+      }
+
+      .card .emoji {
+        font-size: 36px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+    /* ============================================================
+       果冻风 UI 覆盖层：按钮像软糖一样，有高光、软边和弹跳
+       ============================================================ */
+    :root {
+      --pink: #ff7fae;
+      --blue: #4f93d8;
+      --yellow: #ffd166;
+      --cream: #fff9fd;
+      --ink: #5b4b63;
+      --muted: #a99cb1;
+    }
+
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 202, 228, 0.72) 0, rgba(255, 202, 228, 0) 34%),
+        radial-gradient(circle at 86% 12%, rgba(196, 228, 255, 0.78) 0, rgba(196, 228, 255, 0) 36%),
+        radial-gradient(circle at 78% 82%, rgba(255, 228, 178, 0.62) 0, rgba(255, 228, 178, 0) 38%),
+        linear-gradient(160deg, #fff4f9 0%, #f8fbff 50%, #eef7ff 100%);
+    }
+
+    .game {
+      max-width: 760px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 7.5vw, 46px);
+      color: var(--pink);
+      text-shadow: 0 3px 0 #fff, 0 8px 18px rgba(255, 127, 174, 0.28);
+    }
+
+    @supports (-webkit-background-clip: text) {
+      h1 {
+        background: linear-gradient(92deg, #ff7fae 0%, #ff9d76 45%, #ff7fae 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: none;
+      }
+    }
+
+    .subtitle {
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .pill,
+    .btn-restart,
+    .btn-soft {
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.96), rgba(255, 238, 246, 0.9));
+      box-shadow: 0 9px 18px rgba(199, 138, 183, 0.16), inset 0 2px 6px rgba(255, 255, 255, 0.95);
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .btn-restart:active,
+    .btn-soft:active {
+      transform: scale(0.9, 0.84);
+      box-shadow: 0 4px 10px rgba(199, 138, 183, 0.2), inset 0 4px 8px rgba(255, 255, 255, 0.7);
+    }
+
+    .btn-soft {
+      color: #b35f8c;
+    }
+
+    .board {
+      gap: 16px;
+    }
+
+    .column {
+      gap: 15px;
+    }
+
+    .column-label {
+      color: #b48bb0;
+      text-shadow: 0 1px 0 #fff;
+    }
+
+    .card {
+      --jelly-a: #ffd7ea;
+      --jelly-b: #fff0f7;
+      --jelly-shadow: rgba(255, 127, 174, 0.24);
+      position: relative;
+      isolation: isolate;
+      min-height: 82px;
+      border: 2px solid rgba(255, 255, 255, 0.88);
+      border-radius: 30px 30px 34px 34px / 34px 34px 30px 30px;
+      background: linear-gradient(155deg, #ffffff 0%, var(--jelly-b) 100%);
+      box-shadow:
+        0 12px 26px var(--jelly-shadow),
+        inset 0 -7px 12px rgba(255, 255, 255, 0.55),
+        inset 0 6px 12px rgba(255, 255, 255, 0.95);
+      transform-origin: 50% 82%;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+      will-change: transform;
+    }
+
+    .card::before,
+    .card::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      border-radius: inherit;
+      z-index: 0;
+    }
+
+    .card::before {
+      left: 9%;
+      top: 8%;
+      width: 46%;
+      height: 20%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 72%);
+      opacity: 0.95;
+    }
+
+    .card::after {
+      left: 4%;
+      right: 4%;
+      bottom: 4%;
+      height: 32%;
+      background: linear-gradient(to top, var(--jelly-a) 0%, rgba(255, 255, 255, 0) 78%);
+      opacity: 0.32;
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card.en {
+      --jelly-a: #ffd0e5;
+      --jelly-b: #fff1f8;
+      --jelly-shadow: rgba(255, 127, 174, 0.26);
+    }
+
+    .card.zh {
+      --jelly-a: #cde8ff;
+      --jelly-b: #eef7ff;
+      --jelly-shadow: rgba(79, 147, 216, 0.22);
+    }
+
+    .card:hover {
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    .card .emoji {
+      font-size: 32px;
+      filter: drop-shadow(0 4px 5px rgba(105, 75, 105, 0.2));
+    }
+
+    .card .word {
+      font-size: clamp(18px, 4.8vw, 25px);
+      text-shadow: 0 1px 0 #fff;
+    }
+
+    .card.en .word {
+      color: #f4659d;
+    }
+
+    .card.zh .word {
+      color: #4187cc;
+    }
+
+    .card.selected {
+      border-color: var(--yellow);
+      box-shadow:
+        0 0 0 5px rgba(255, 209, 102, 0.42),
+        0 15px 30px var(--jelly-shadow),
+        inset 0 -7px 12px rgba(255, 255, 255, 0.55),
+        inset 0 6px 12px rgba(255, 255, 255, 0.95);
+      transform: translateY(-3px) scale(1.03);
+    }
+
+    .card.jelly-press {
+      animation: jelly 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .card.wrong {
+      border-color: #ff8fa3;
+      box-shadow:
+        0 0 0 5px rgba(255, 143, 163, 0.28),
+        0 12px 26px rgba(255, 127, 174, 0.22);
+      animation: shake 0.38s ease;
+    }
+
+    .card.matched {
+      animation: pop-away 0.56s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .win-message {
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(255, 238, 246, 0.9));
+      border: 2px dashed #ffc9e2;
+      box-shadow: 0 10px 24px rgba(199, 138, 183, 0.14);
+    }
+
+    .overlay {
+      background: rgba(98, 66, 106, 0.26);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .sheet {
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      border-radius: 34px;
+      box-shadow: 0 24px 60px rgba(120, 80, 120, 0.3);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    #wordBankInput {
+      border: 2px solid #ffd9ec;
+      background: #fffafd;
+    }
+
+    #wordBankInput:focus {
+      border-color: #ff9fc8;
+      box-shadow: 0 0 0 5px rgba(255, 159, 200, 0.2);
+    }
+
+    .sheet-actions .primary {
+      background: linear-gradient(135deg, #ff9fc8, #ff7fae);
+      box-shadow: 0 10px 22px rgba(255, 127, 174, 0.34), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    }
+
+    .sheet-actions .ghost {
+      background: #f8f1f8;
+    }
+
+    @keyframes jelly {
+      0% { transform: scale(1, 1); }
+      28% { transform: scale(0.86, 0.74) rotate(-1.5deg); }
+      52% { transform: scale(1.1, 0.94) rotate(1.5deg); }
+      74% { transform: scale(0.96, 1.04) rotate(-0.6deg); }
+      100% { transform: scale(1, 1) rotate(0deg); }
+    }
+
+    @keyframes pop-away {
+      0% { transform: scale(1); opacity: 1; }
+      30% { transform: scale(1.18, 0.88) rotate(-2deg); opacity: 1; }
+      62% { transform: scale(1.22, 1.22) rotate(2deg); opacity: 0.9; }
+      100% { transform: scale(0.3) rotate(7deg); opacity: 0; }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(3px); }
+    }
+
+    @keyframes sheet-in {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.94);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (min-width: 560px) {
+      .board {
+        gap: 18px;
+      }
+
+      .column {
+        gap: 17px;
+      }
+
+      .card {
+        min-height: 94px;
+        border-radius: 34px 34px 38px 38px / 38px 38px 34px 34px;
+      }
+
+      .card .emoji {
+        font-size: 38px;
+      }
+    }
+
+    /* 20 组单词时，把整局游戏压进一屏，不用上下滚动 */
+    body.compact {
+      height: 100dvh;
+      min-height: 100dvh;
+      overflow: hidden;
+      padding-top: max(10px, env(safe-area-inset-top));
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    body.compact .game {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body.compact .status-row {
+      flex: 0 0 auto;
+      gap: 8px;
+      margin: 0 4px 8px;
+    }
+
+    body.compact .pill,
+    body.compact .btn-restart,
+    body.compact .btn-soft {
+      padding: 7px 11px;
+      font-size: 12px;
+    }
+
+    body.compact .board {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: 100%;
+      gap: 7px;
+      align-items: stretch;
+    }
+
+    body.compact .column {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto repeat(var(--pair-count, 20), minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    body.compact .column-label {
+      margin-bottom: 2px;
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    body.compact .card {
+      min-height: 0;
+      padding: 2px 7px;
+      gap: 5px;
+      border-width: 1.5px;
+      border-radius: 14px;
+      box-shadow:
+        0 4px 9px var(--jelly-shadow),
+        inset 0 -3px 6px rgba(255, 255, 255, 0.5),
+        inset 0 3px 6px rgba(255, 255, 255, 0.9);
+    }
+
+    body.compact .card::before {
+      left: 10%;
+      top: 7%;
+      width: 40%;
+      height: 22%;
+      opacity: 0.8;
+    }
+
+    body.compact .card::after {
+      height: 26%;
+      opacity: 0.24;
+    }
+
+    body.compact .card .emoji {
+      font-size: 15px;
+    }
+
+    body.compact .card .word {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: clamp(12px, 3.7vw, 16px);
+      line-height: 1;
+    }
+
+    body.compact .card.selected {
+      box-shadow:
+        0 0 0 3px rgba(255, 209, 102, 0.45),
+        0 4px 9px var(--jelly-shadow),
+        inset 0 -3px 6px rgba(255, 255, 255, 0.5),
+        inset 0 3px 6px rgba(255, 255, 255, 0.9);
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    body.compact .win-message {
+      position: fixed;
+      left: 50%;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      width: calc(100% - 32px);
+      max-width: 560px;
+      margin: 0;
+      z-index: 30;
+      transform: translate(-50%, 12px);
+    }
+
+    body.compact .win-message.show {
+      transform: translate(-50%, 0);
+    }
+
+    .btn-icon {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.96), rgba(255, 238, 246, 0.9));
+      box-shadow: 0 8px 16px rgba(199, 138, 183, 0.16), inset 0 2px 6px rgba(255, 255, 255, 0.95);
+      cursor: pointer;
+      font-size: 21px;
+      touch-action: manipulation;
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+    }
+
+    .btn-icon:active {
+      transform: scale(0.86, 0.78);
+      box-shadow: 0 4px 9px rgba(199, 138, 183, 0.2), inset 0 4px 8px rgba(255, 255, 255, 0.7);
+    }
+
+    body.compact .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 13px;
+      font-size: 18px;
+    }
+
+    .upload-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border: 2px dashed #ffc9e2;
+      border-radius: 20px;
+      background: #fff7fb;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .upload-box:active {
+      transform: scale(0.98);
+      border-color: #ff9fc8;
+    }
+
+    .upload-box input {
+      display: none;
+    }
+
+    .upload-box .upload-icon {
+      font-size: 30px;
+    }
+
+    .upload-box b {
+      display: block;
+      color: #b15f8d;
+      font-size: 15px;
+    }
+
+    .upload-box small {
+      display: block;
+      margin-top: 2px;
+      color: #a99cb1;
+      font-size: 12px;
+    }
+
+    .ocr-status {
+      min-height: 18px;
+      margin: -3px 0 10px;
+      color: #9b8aa2;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .ocr-status.busy {
+      color: #e58d34;
+    }
+
+    .ocr-status.success {
+      color: #2fa36b;
+    }
+
+    .ocr-status.error {
+      color: #e2557f;
+    }
+
+    .calendar-sheet {
+      max-width: 440px;
+    }
+
+    .calendar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .calendar-head h2 {
+      font-size: 22px;
+    }
+
+    .calendar-nav {
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      background: #f7f1f7;
+      color: #9b7ea7;
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .calendar-nav:active {
+      transform: scale(0.9);
+    }
+
+    .calendar-weekdays,
+    .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .calendar-weekdays {
+      margin: 15px 0 6px;
+      color: #b09aad;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .calendar-days .day {
+      min-height: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: #fff7fb;
+      color: #6d5a70;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .calendar-days .day small {
+      margin-top: 1px;
+      font-size: 10px;
+      font-weight: 800;
+      opacity: 0.72;
+    }
+
+    .calendar-days .day.empty {
+      background: transparent;
+    }
+
+    .calendar-days .day.today {
+      background: linear-gradient(135deg, #ff9fc8, #ff7fae);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .calendar-days .day.done {
+      background: #e8f8ef;
+      color: #2fa36b;
+    }
+
+    .calendar-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 17px;
+      color: #8a7089;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .calendar-footer input {
+      width: 74px;
+      padding: 8px 10px;
+      border: 2px solid #ffd9ec;
+      border-radius: 13px;
+      text-align: center;
+      font: inherit;
+      font-weight: 800;
+      color: #ff7fae;
+      background: #fff;
+      outline: none;
+    }
+
+    .calendar-footer input:focus {
+      border-color: #ff9fc8;
+      box-shadow: 0 0 0 4px rgba(255, 159, 200, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <div class="status-row">
+      <div class="pill">📅 今日 <span id="todayDone">0</span>/<span id="dailyTarget">20</span> 词</div>
+      <div class="actions">
+        <button class="btn-icon" id="shuffleBtn" type="button" title="一键打乱">🔀</button>
+        <button class="btn-icon" id="calendarBtn" type="button" title="日历">📅</button>
+        <button class="btn-icon" id="wordBankBtn" type="button" title="我的词库">📚</button>
+        <button class="btn-icon" id="restart" type="button" title="重新开始">🔄</button>
+      </div>
+    </div>
+
+    <section class="board" id="board" aria-label="连连看游戏区">
+      <div class="column en-column" id="enColumn">
+        <div class="column-label">ENGLISH</div>
+      </div>
+      <div class="column zh-column" id="zhColumn">
+        <div class="column-label">中文</div>
+      </div>
+    </section>
+
+    <div class="win-message" id="winMessage">🎉 太棒啦！全部配对成功！</div>
+  </main>
+
+  <div class="overlay" id="wordBankOverlay" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wordBankTitle">
+      <h2 id="wordBankTitle">📚 我的词库</h2>
+      <p class="hint">
+        每行一组单词，格式：<b>英语, 中文</b> 或 <b>英语 中文</b>。<br />
+        也可以加上表情：<b>apple, 苹果, 🍎</b>
+      </p>
+      <label class="upload-box" for="imageUpload">
+        <span class="upload-icon">📷</span>
+        <span>
+          <b>上传单词图片</b>
+          <small>自动识别英文和中文</small>
+        </span>
+        <input id="imageUpload" type="file" accept="image/*" />
+      </label>
+      <div class="ocr-status" id="ocrStatus" aria-live="polite"></div>
+      <textarea id="wordBankInput" spellcheck="false" placeholder="apple, 苹果&#10;cat, 猫&#10;sunshine, 阳光, ☀️"></textarea>
+      <div class="sheet-meta">
+        <span id="wordCount">0 组单词</span>
+        <span class="sheet-error" id="wordBankError"></span>
+      </div>
+      <div class="sheet-actions">
+        <button class="ghost" id="resetWords" type="button">恢复示例</button>
+        <button class="ghost" id="closeWordBank" type="button">取消</button>
+        <button class="primary" id="saveWordBank" type="button">保存并开始</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="calendarOverlay" aria-hidden="true">
+    <div class="sheet calendar-sheet" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
+      <div class="calendar-head">
+        <button class="calendar-nav" id="prevMonth" type="button" aria-label="上个月">‹</button>
+        <h2 id="calendarTitle">2026年9月</h2>
+        <button class="calendar-nav" id="nextMonth" type="button" aria-label="下个月">›</button>
+      </div>
+
+      <div class="calendar-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="calendar-days" id="calendarDays"></div>
+
+      <div class="calendar-footer">
+        <label for="dailyTargetInput">今日目标</label>
+        <input id="dailyTargetInput" type="number" min="1" max="300" value="20" inputmode="numeric" />
+        <span>词</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const DEFAULT_PAIRS = [
+        { en: "apple", zh: "苹果", emoji: "🍎" },
+        { en: "cat", zh: "猫", emoji: "🐱" },
+        { en: "dog", zh: "狗", emoji: "🐶" },
+        { en: "book", zh: "书", emoji: "📖" },
+        { en: "sun", zh: "太阳", emoji: "☀️" },
+        { en: "moon", zh: "月亮", emoji: "🌙" },
+        { en: "star", zh: "星星", emoji: "⭐" },
+        { en: "flower", zh: "花", emoji: "🌸" },
+        { en: "water", zh: "水", emoji: "💧" },
+        { en: "fire", zh: "火", emoji: "🔥" },
+        { en: "tree", zh: "树", emoji: "🌳" },
+        { en: "bird", zh: "鸟", emoji: "🐦" },
+        { en: "fish", zh: "鱼", emoji: "🐟" },
+        { en: "egg", zh: "鸡蛋", emoji: "🥚" },
+        { en: "bread", zh: "面包", emoji: "🍞" },
+        { en: "milk", zh: "牛奶", emoji: "🥛" },
+        { en: "car", zh: "汽车", emoji: "🚗" },
+        { en: "house", zh: "房子", emoji: "🏠" },
+        { en: "school", zh: "学校", emoji: "🏫" },
+        { en: "rain", zh: "雨", emoji: "🌧️" }
+      ];
+      const EMOJI_POOL = ["✨", "🍓", "🐰", "🌈", "🍀", "🎈", "🍭", "🧸", "🫧", "🌷", "🦋", "🌟"];
+      const STORAGE_KEY = "english-matching-words-v2";
+      const PROGRESS_KEY = "english-matching-progress-v1";
+      const DAILY_TARGET_KEY = "english-matching-daily-target";
+
+      let currentPairs = loadPairs();
+
+      const board = document.getElementById("board");
+      const enColumn = document.getElementById("enColumn");
+      const zhColumn = document.getElementById("zhColumn");
+      const todayDoneEl = document.getElementById("todayDone");
+      const dailyTargetEl = document.getElementById("dailyTarget");
+      const winMessage = document.getElementById("winMessage");
+      const restartBtn = document.getElementById("restart");
+      const shuffleBtn = document.getElementById("shuffleBtn");
+      const calendarBtn = document.getElementById("calendarBtn");
+      const wordBankBtn = document.getElementById("wordBankBtn");
+      const wordBankOverlay = document.getElementById("wordBankOverlay");
+      const wordBankInput = document.getElementById("wordBankInput");
+      const wordCount = document.getElementById("wordCount");
+      const wordBankError = document.getElementById("wordBankError");
+      const saveWordBankBtn = document.getElementById("saveWordBank");
+      const closeWordBankBtn = document.getElementById("closeWordBank");
+      const resetWordsBtn = document.getElementById("resetWords");
+      const imageUpload = document.getElementById("imageUpload");
+      const ocrStatus = document.getElementById("ocrStatus");
+      const calendarOverlay = document.getElementById("calendarOverlay");
+      const calendarTitle = document.getElementById("calendarTitle");
+      const calendarDays = document.getElementById("calendarDays");
+      const prevMonthBtn = document.getElementById("prevMonth");
+      const nextMonthBtn = document.getElementById("nextMonth");
+      const dailyTargetInput = document.getElementById("dailyTargetInput");
+
+      let selectedEn = null;
+      let selectedZh = null;
+      let matchedCount = 0;
+      let locked = false;
+      let audioCtx = null;
+      let calendarCursor = new Date();
+
+      function loadPairs() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return DEFAULT_PAIRS.slice();
+          const parsed = JSON.parse(raw);
+          if (
+            Array.isArray(parsed) &&
+            parsed.length > 0 &&
+            parsed.every((p) => p && typeof p.en === "string" && typeof p.zh === "string")
+          ) {
+            return parsed;
+          }
+        } catch (err) {
+          // 词库数据损坏时回到示例单词
+        }
+        return DEFAULT_PAIRS.slice();
+      }
+
+      function savePairs(pairs) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(pairs));
+        } catch (err) {
+          // 本地存储不可用时，词库仅在本次打开期间生效
+        }
+      }
+
+      function pairsToText(pairs) {
+        return pairs
+          .map((pair) => [pair.en, pair.zh, pair.emoji].filter(Boolean).join(", "))
+          .join("\n");
+      }
+
+      function parsePairs(text) {
+        const lines = text.split(/\r?\n/);
+        const pairs = [];
+        const errorLines = [];
+
+        lines.forEach((rawLine, index) => {
+          const line = rawLine.trim();
+          if (!line) return;
+
+          let parts = line.split(/\t|，|,|＝|=|\|/);
+          if (parts.length < 2) {
+            parts = line.split(/\s+/);
+          }
+
+          parts = parts.map((part) => part.trim()).filter(Boolean);
+          if (parts.length < 2) {
+            errorLines.push(index + 1);
+            return;
+          }
+
+          pairs.push({
+            en: parts[0],
+            zh: parts[1],
+            emoji: parts[2] || EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+          });
+        });
+
+        return { pairs, errorLines };
+      }
+
+      function updateWordCount() {
+        const { pairs, errorLines } = parsePairs(wordBankInput.value);
+        wordCount.textContent = `${pairs.length} 组单词`;
+        wordBankError.textContent = errorLines.length
+          ? `第 ${errorLines.join("、")} 行格式不对`
+          : "";
+      }
+
+      function openWordBank() {
+        wordBankInput.value = pairsToText(currentPairs);
+        updateWordCount();
+        wordBankError.textContent = "";
+        wordBankOverlay.classList.add("open");
+        wordBankOverlay.setAttribute("aria-hidden", "false");
+        tapHaptic();
+        playTap();
+      }
+
+      function closeWordBank() {
+        wordBankOverlay.classList.remove("open");
+        wordBankOverlay.setAttribute("aria-hidden", "true");
+      }
+
+      function dateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function todayKey() {
+        return dateKey(new Date());
+      }
+
+      function loadProgress() {
+        try {
+          const raw = localStorage.getItem(PROGRESS_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (err) {
+          return {};
+        }
+      }
+
+      function saveProgress(progress) {
+        try {
+          localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+        } catch (err) {
+          // 本地存储不可用时，进度只在本次打开期间有效
+        }
+      }
+
+      function getTodayCompleted() {
+        return loadProgress()[todayKey()] || 0;
+      }
+
+      function getDailyTarget() {
+        const n = parseInt(localStorage.getItem(DAILY_TARGET_KEY), 10);
+        return Number.isFinite(n) && n > 0 ? n : 20;
+      }
+
+      function setDailyTarget(n) {
+        const value = Math.max(1, Math.min(300, n || 1));
+        localStorage.setItem(DAILY_TARGET_KEY, String(value));
+        updateTodayDisplay();
+        renderCalendar();
+      }
+
+      function updateTodayDisplay() {
+        const target = getDailyTarget();
+        todayDoneEl.textContent = String(Math.min(getTodayCompleted(), target));
+        dailyTargetEl.textContent = String(target);
+        dailyTargetInput.value = String(target);
+      }
+
+      function recordMatch() {
+        const key = todayKey();
+        const progress = loadProgress();
+        const target = getDailyTarget();
+        const next = Math.min((progress[key] || 0) + 1, target);
+        progress[key] = next;
+        saveProgress(progress);
+        updateTodayDisplay();
+        renderCalendar();
+      }
+
+      function openCalendar() {
+        calendarCursor = new Date();
+        dailyTargetInput.value = String(getDailyTarget());
+        renderCalendar();
+        calendarOverlay.classList.add("open");
+        calendarOverlay.setAttribute("aria-hidden", "false");
+        tapHaptic();
+        playTap();
+      }
+
+      function closeCalendar() {
+        calendarOverlay.classList.remove("open");
+        calendarOverlay.setAttribute("aria-hidden", "true");
+      }
+
+      function renderCalendar() {
+        const year = calendarCursor.getFullYear();
+        const month = calendarCursor.getMonth();
+        calendarTitle.textContent = `${year}年${month + 1}月`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const progress = loadProgress();
+        const target = getDailyTarget();
+        const today = todayKey();
+
+        calendarDays.innerHTML = "";
+
+        for (let i = 0; i < firstDay; i += 1) {
+          const empty = document.createElement("div");
+          empty.className = "day empty";
+          calendarDays.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+          const date = new Date(year, month, day);
+          const key = dateKey(date);
+          const completed = progress[key] || 0;
+          const cell = document.createElement("div");
+          cell.className = "day";
+          if (key === today) cell.classList.add("today");
+          if (completed > 0) cell.classList.add("done");
+
+          const dayNumber = document.createElement("span");
+          dayNumber.textContent = String(day);
+          const count = document.createElement("small");
+          if (key === today) {
+            count.textContent = `${completed}/${target}词`;
+          } else {
+            count.textContent = completed > 0 ? `${completed}词` : "—";
+          }
+
+          cell.append(dayNumber, count);
+          calendarDays.appendChild(cell);
+        }
+      }
+
+      function shuffleRemaining() {
+        if (locked) return;
+
+        const enCards = Array.from(enColumn.querySelectorAll(".card:not(.matched)"));
+        const zhCards = Array.from(zhColumn.querySelectorAll(".card:not(.matched)"));
+
+        shuffle(enCards).forEach((card) => enColumn.appendChild(card));
+        shuffle(zhCards).forEach((card) => zhColumn.appendChild(card));
+
+        if (selectedEn) selectedEn.classList.remove("selected");
+        if (selectedZh) selectedZh.classList.remove("selected");
+        selectedEn = null;
+        selectedZh = null;
+
+        tapHaptic();
+        playTap();
+      }
+
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function tapHaptic() {
+        if (navigator.vibrate) {
+          // 轻一点：很短的点击反馈
+          navigator.vibrate(12);
+        }
+      }
+
+      function matchHaptic() {
+        if (navigator.vibrate) {
+          // 大一点：连续、明显的成功反馈
+          navigator.vibrate([22, 28, 22, 28, 70]);
+        }
+      }
+
+      function ensureAudio() {
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return null;
+          if (!audioCtx) audioCtx = new Ctx();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          return audioCtx;
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function playPop() {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const notes = [660, 880, 1320];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + i * 0.055);
+          gain.gain.setValueAtTime(0.0001, now + i * 0.055);
+          gain.gain.exponentialRampToValueAtTime(0.08, now + i * 0.055 + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.055 + 0.16);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.055);
+          osc.stop(now + i * 0.055 + 0.18);
+        });
+      }
+
+      function playTap() {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(340, now + 0.08);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.035, now + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      function setOcrStatus(message, type) {
+        ocrStatus.textContent = message;
+        ocrStatus.className = `ocr-status ${type || ""}`.trim();
+      }
+
+      function looksChinese(text) {
+        return /[\u4e00-\u9fff]/.test(text);
+      }
+
+      function loadTesseract() {
+        return new Promise((resolve, reject) => {
+          if (window.Tesseract) {
+            resolve(window.Tesseract);
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+          script.onload = () => resolve(window.Tesseract);
+          script.onerror = () => reject(new Error("无法加载 OCR 组件，请检查网络"));
+          document.head.appendChild(script);
+        });
+      }
+
+      async function translateWord(word, toChinese) {
+        const langpair = toChinese ? "en|zh-CN" : "zh-CN|en";
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${langpair}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("翻译服务暂时不可用");
+        const data = await response.json();
+        const translated =
+          data && data.responseData && typeof data.responseData.translatedText === "string"
+            ? data.responseData.translatedText.trim()
+            : "";
+        return translated || word;
+      }
+
+      async function buildPairsFromOcr(text) {
+        const lines = text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        const pairs = [];
+        const singleWords = [];
+
+        for (const line of lines) {
+          let parts = line
+            .split(/\t|，|,|＝|=|\|/)
+            .map((part) => part.trim())
+            .filter(Boolean);
+          if (parts.length < 2) {
+            parts = line.split(/\s+/).filter(Boolean);
+          }
+
+          if (parts.length >= 2) {
+            const a = parts[0];
+            const b = parts[1];
+            const aIsChinese = looksChinese(a);
+            const bIsChinese = looksChinese(b);
+            let en = "";
+            let zh = "";
+
+            if (aIsChinese && !bIsChinese) {
+              zh = a;
+              en = b;
+            } else if (!aIsChinese && bIsChinese) {
+              en = a;
+              zh = b;
+            } else if (aIsChinese && bIsChinese) {
+              zh = a;
+              en = await translateWord(a, false);
+            } else {
+              en = a;
+              zh = await translateWord(a, true);
+            }
+
+            if (en && zh) {
+              pairs.push({
+                en,
+                zh,
+                emoji: EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+              });
+            }
+          } else if (parts.length === 1) {
+            singleWords.push(parts[0]);
+          } else {
+            singleWords.push(line);
+          }
+        }
+
+        if (!pairs.length && singleWords.length) {
+          const uniqueWords = Array.from(new Set(singleWords)).slice(0, 50);
+          for (const word of uniqueWords) {
+            if (looksChinese(word)) {
+              pairs.push({
+                en: await translateWord(word, false),
+                zh: word,
+                emoji: EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+              });
+            } else {
+              pairs.push({
+                en: word,
+                zh: await translateWord(word, true),
+                emoji: EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+              });
+            }
+          }
+        }
+
+        return pairs.slice(0, 100);
+      }
+
+      async function processImage(file) {
+        setOcrStatus("正在识别图片…", "busy");
+        try {
+          const Tesseract = await loadTesseract();
+          const result = await Tesseract.recognize(file, "eng+chi_sim", {
+            logger: (message) => {
+              if (message.status === "recognizing text" && typeof message.progress === "number") {
+                setOcrStatus(`识别中… ${Math.round(message.progress * 100)}%`, "busy");
+              }
+            }
+          });
+
+          const recognizedText = (result && result.data && result.data.text) || "";
+          if (!recognizedText.trim()) {
+            setOcrStatus("没有识别到文字，请换一张更清晰的图片", "error");
+            return;
+          }
+
+          setOcrStatus("正在自动翻译成英文和中文…", "busy");
+          const pairs = await buildPairsFromOcr(recognizedText);
+          if (!pairs.length) {
+            setOcrStatus("没有生成单词，请检查图片内容", "error");
+            return;
+          }
+
+          wordBankInput.value = pairsToText(pairs);
+          updateWordCount();
+          setOcrStatus(`识别完成，已生成 ${pairs.length} 组单词，请检查后保存`, "success");
+        } catch (err) {
+          setOcrStatus(`识别失败：${err.message || "请检查网络"}`, "error");
+        }
+      }
+
+      function render() {
+        const isCompact = currentPairs.length >= 12;
+        document.body.classList.toggle("compact", isCompact);
+        board.style.setProperty("--pair-count", String(currentPairs.length));
+
+        enColumn.querySelectorAll(".card").forEach((n) => n.remove());
+        zhColumn.querySelectorAll(".card").forEach((n) => n.remove());
+
+        const enShuffled = shuffle(currentPairs);
+        const zhShuffled = shuffle(currentPairs);
+
+        enShuffled.forEach((pair) => {
+          enColumn.appendChild(createCard(pair, "en"));
+        });
+        zhShuffled.forEach((pair) => {
+          zhColumn.appendChild(createCard(pair, "zh"));
+        });
+
+        matchedCount = 0;
+        selectedEn = null;
+        selectedZh = null;
+        locked = false;
+        winMessage.classList.remove("show");
+        updateTodayDisplay();
+      }
+
+      function createCard(pair, type) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `card ${type}`;
+        card.dataset.pair = pair.en;
+
+        const emoji = document.createElement("span");
+        emoji.className = "emoji";
+        emoji.textContent = pair.emoji;
+
+        const word = document.createElement("span");
+        word.className = "word";
+        word.textContent = type === "en" ? pair.en : pair.zh;
+
+        card.append(emoji, word);
+        card.addEventListener("click", () => handleCardClick(card, type, pair));
+        card.addEventListener("pointerdown", pressJelly);
+        return card;
+      }
+
+      function pressJelly(event) {
+        const card = event.currentTarget;
+        if (card.classList.contains("matched")) return;
+        card.classList.remove("jelly-press");
+        void card.offsetWidth;
+        card.classList.add("jelly-press");
+        setTimeout(() => card.classList.remove("jelly-press"), 280);
+      }
+
+      function handleCardClick(card, type, pair) {
+        if (locked || card.classList.contains("matched")) return;
+
+        tapHaptic();
+        playTap();
+
+        if (type === "en") {
+          if (selectedEn === card) {
+            card.classList.remove("selected");
+            selectedEn = null;
+            return;
+          }
+          if (selectedEn) selectedEn.classList.remove("selected");
+          selectedEn = card;
+          card.classList.add("selected");
+        } else {
+          if (selectedZh === card) {
+            card.classList.remove("selected");
+            selectedZh = null;
+            return;
+          }
+          if (selectedZh) selectedZh.classList.remove("selected");
+          selectedZh = card;
+          card.classList.add("selected");
+        }
+
+        if (selectedEn && selectedZh) {
+          checkMatch();
+        }
+      }
+
+      function checkMatch() {
+        locked = true;
+        const en = selectedEn;
+        const zh = selectedZh;
+        const isMatch = en.dataset.pair === zh.dataset.pair;
+
+        if (isMatch) {
+          matchedCount += 1;
+          recordMatch();
+          matchHaptic();
+          playPop();
+
+          en.classList.remove("selected");
+          zh.classList.remove("selected");
+          en.classList.add("matched");
+          zh.classList.add("matched");
+
+          setTimeout(() => {
+            en.style.visibility = "hidden";
+            zh.style.visibility = "hidden";
+          }, 520);
+
+          selectedEn = null;
+          selectedZh = null;
+
+          setTimeout(() => {
+            locked = false;
+            if (matchedCount === currentPairs.length) {
+              winMessage.classList.add("show");
+            }
+          }, 540);
+        } else {
+          en.classList.add("wrong");
+          zh.classList.add("wrong");
+
+          setTimeout(() => {
+            en.classList.remove("selected", "wrong");
+            zh.classList.remove("selected", "wrong");
+            selectedEn = null;
+            selectedZh = null;
+            locked = false;
+          }, 420);
+        }
+      }
+
+      function createBubbles() {
+        for (let i = 0; i < 12; i += 1) {
+          const bubble = document.createElement("div");
+          bubble.className = "bubble";
+          const size = 28 + Math.random() * 48;
+          bubble.style.width = `${size}px`;
+          bubble.style.height = `${size}px`;
+          bubble.style.left = `${Math.random() * 100}vw`;
+          bubble.style.animationDuration = `${9 + Math.random() * 11}s`;
+          bubble.style.animationDelay = `${-Math.random() * 16}s`;
+          document.body.appendChild(bubble);
+        }
+      }
+
+      restartBtn.addEventListener("click", () => {
+        tapHaptic();
+        render();
+      });
+
+      shuffleBtn.addEventListener("click", shuffleRemaining);
+
+      wordBankBtn.addEventListener("click", openWordBank);
+
+      closeWordBankBtn.addEventListener("click", () => {
+        tapHaptic();
+        closeWordBank();
+      });
+
+      wordBankOverlay.addEventListener("click", (event) => {
+        if (event.target === wordBankOverlay) {
+          closeWordBank();
+        }
+      });
+
+      wordBankInput.addEventListener("input", updateWordCount);
+
+      resetWordsBtn.addEventListener("click", () => {
+        wordBankInput.value = pairsToText(DEFAULT_PAIRS);
+        updateWordCount();
+        wordBankError.textContent = "";
+        tapHaptic();
+      });
+
+      saveWordBankBtn.addEventListener("click", () => {
+        const { pairs, errorLines } = parsePairs(wordBankInput.value);
+        if (!pairs.length) {
+          wordBankError.textContent = "请至少输入一组单词";
+          return;
+        }
+
+        currentPairs = pairs;
+        savePairs(currentPairs);
+        closeWordBank();
+        tapHaptic();
+        render();
+      });
+
+      imageUpload.addEventListener("change", (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (file) processImage(file);
+        event.target.value = "";
+      });
+
+      calendarBtn.addEventListener("click", openCalendar);
+
+      calendarOverlay.addEventListener("click", (event) => {
+        if (event.target === calendarOverlay) {
+          closeCalendar();
+        }
+      });
+
+      prevMonthBtn.addEventListener("click", () => {
+        calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+        renderCalendar();
+        tapHaptic();
+      });
+
+      nextMonthBtn.addEventListener("click", () => {
+        calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+        renderCalendar();
+        tapHaptic();
+      });
+
+      dailyTargetInput.addEventListener("change", () => {
+        setDailyTarget(parseInt(dailyTargetInput.value, 10));
+        tapHaptic();
+      });
+
+      createBubbles();
+      render();
+    })();
+  </script>
+</body>
+</html>
