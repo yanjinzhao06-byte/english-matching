@@ -1595,19 +1595,132 @@
         return pairs.slice(0, 100);
       }
 
+      function loadImage(file) {
+        return new Promise((resolve, reject) => {
+          const objectUrl = URL.createObjectURL(file);
+          const image = new Image();
+          image.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(image);
+          };
+          image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("图片读取失败"));
+          };
+          image.src = objectUrl;
+        });
+      }
+
+      function preprocessImage(image) {
+        const maxDimension = 2200;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.drawImage(image, 0, 0, width, height);
+
+        const imageData = context.getImageData(0, 0, width, height);
+        const pixels = imageData.data;
+        const gray = new Uint8ClampedArray(width * height);
+        const histogram = new Array(256).fill(0);
+
+        for (let i = 0; i < width * height; i += 1) {
+          const offset = i * 4;
+          const value = Math.round(
+            0.299 * pixels[offset] + 0.587 * pixels[offset + 1] + 0.114 * pixels[offset + 2]
+          );
+          gray[i] = value;
+          histogram[value] += 1;
+        }
+
+        const total = width * height;
+        let sum = 0;
+        for (let i = 0; i < 256; i += 1) sum += i * histogram[i];
+
+        let sumBackground = 0;
+        let weightBackground = 0;
+        let maxVariance = 0;
+        let threshold = 128;
+
+        for (let i = 0; i < 256; i += 1) {
+          weightBackground += histogram[i];
+          if (weightBackground === 0) continue;
+          const weightForeground = total - weightBackground;
+          if (weightForeground === 0) break;
+
+          sumBackground += i * histogram[i];
+          const meanBackground = sumBackground / weightBackground;
+          const meanForeground = (sum - sumBackground) / weightForeground;
+          const variance = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
+
+          if (variance > maxVariance) {
+            maxVariance = variance;
+            threshold = i;
+          }
+        }
+
+        const border = [];
+        for (let x = 0; x < width; x += 1) {
+          border.push(gray[x]);
+          border.push(gray[(height - 1) * width + x]);
+        }
+        for (let y = 0; y < height; y += 1) {
+          border.push(gray[y * width]);
+          border.push(gray[y * width + width - 1]);
+        }
+        const borderAverage = border.reduce((a, b) => a + b, 0) / border.length;
+        const textIsDark = borderAverage > 128;
+
+        for (let i = 0; i < width * height; i += 1) {
+          const value = gray[i];
+          const binary = textIsDark ? (value < threshold ? 0 : 255) : (value < threshold ? 255 : 0);
+          const offset = i * 4;
+          pixels[offset] = binary;
+          pixels[offset + 1] = binary;
+          pixels[offset + 2] = binary;
+          pixels[offset + 3] = 255;
+        }
+
+        context.putImageData(imageData, 0, 0);
+        return canvas.toDataURL("image/png");
+      }
+
+      async function recognizeImage(file, Tesseract, logger) {
+        const image = await loadImage(file);
+        const processed = preprocessImage(image);
+        const first = await Tesseract.recognize(processed, "eng+chi_sim", { logger });
+        let text = (first && first.data && first.data.text) || "";
+
+        const nonEmptyLines = text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean).length;
+
+        if (nonEmptyLines < 2) {
+          setOcrStatus("正在尝试第二种识别方式…", "busy");
+          const second = await Tesseract.recognize(file, "eng+chi_sim", { logger });
+          const secondText = (second && second.data && second.data.text) || "";
+          if (secondText.trim().length > text.trim().length) {
+            text = secondText;
+          }
+        }
+
+        return text;
+      }
+
       async function processImage(file) {
         setOcrStatus("正在识别图片…", "busy");
         try {
           const Tesseract = await loadTesseract();
-          const result = await Tesseract.recognize(file, "eng+chi_sim", {
-            logger: (message) => {
-              if (message.status === "recognizing text" && typeof message.progress === "number") {
-                setOcrStatus(`识别中… ${Math.round(message.progress * 100)}%`, "busy");
-              }
+          const logger = (message) => {
+            if (message.status === "recognizing text" && typeof message.progress === "number") {
+              setOcrStatus(`识别中… ${Math.round(message.progress * 100)}%`, "busy");
             }
-          });
-
-          const recognizedText = (result && result.data && result.data.text) || "";
+          };
+          const recognizedText = await recognizeImage(file, Tesseract, logger);
           if (!recognizedText.trim()) {
             setOcrStatus("没有识别到文字，请换一张更清晰的图片", "error");
             return;
