@@ -1083,8 +1083,7 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wordBankTitle">
       <h2 id="wordBankTitle">📚 我的词库</h2>
       <p class="hint">
-        每行一组单词，格式：<b>英语, 中文</b> 或 <b>英语 中文</b>。<br />
-        也可以加上表情：<b>apple, 苹果, 🍎</b>
+        每行一组单词，格式：<b>英语, 中文</b> 或 <b>英语 中文</b>。
       </p>
       <label class="upload-box" for="imageUpload">
         <span class="upload-icon">📷</span>
@@ -1095,7 +1094,7 @@
         <input id="imageUpload" type="file" accept="image/*" />
       </label>
       <div class="ocr-status" id="ocrStatus" aria-live="polite"></div>
-      <textarea id="wordBankInput" spellcheck="false" placeholder="apple, 苹果&#10;cat, 猫&#10;sunshine, 阳光, ☀️"></textarea>
+      <textarea id="wordBankInput" spellcheck="false" placeholder="apple, 苹果&#10;cat, 猫&#10;sunshine, 阳光"></textarea>
       <div class="sheet-meta">
         <span id="wordCount">0 组单词</span>
         <span class="sheet-error" id="wordBankError"></span>
@@ -1221,7 +1220,7 @@
 
       function pairsToText(pairs) {
         return pairs
-          .map((pair) => [pair.en, pair.zh, pair.emoji].filter(Boolean).join(", "))
+          .map((pair) => [pair.en, pair.zh].filter(Boolean).join(", "))
           .join("\n");
       }
 
@@ -1247,8 +1246,7 @@
 
           pairs.push({
             en: parts[0],
-            zh: parts[1],
-            emoji: parts[2] || EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+            zh: parts[1]
           });
         });
 
@@ -1567,8 +1565,7 @@
             if (en && zh) {
               pairs.push({
                 en,
-                zh,
-                emoji: EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+                zh
               });
             }
           } else if (parts.length === 1) {
@@ -1584,14 +1581,12 @@
             if (looksChinese(word)) {
               pairs.push({
                 en: await translateWord(word, false),
-                zh: word,
-                emoji: EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+                zh: word
               });
             } else {
               pairs.push({
                 en: word,
-                zh: await translateWord(word, true),
-                emoji: EMOJI_POOL[pairs.length % EMOJI_POOL.length]
+                zh: await translateWord(word, true)
               });
             }
           }
@@ -1665,15 +1660,11 @@
         card.className = `card ${type}`;
         card.dataset.pair = pair.en;
 
-        const emoji = document.createElement("span");
-        emoji.className = "emoji";
-        emoji.textContent = pair.emoji;
-
         const word = document.createElement("span");
         word.className = "word";
         word.textContent = type === "en" ? pair.en : pair.zh;
 
-        card.append(emoji, word);
+        card.append(word);
         card.addEventListener("click", () => handleCardClick(card, type, pair));
         card.addEventListener("pointerdown", pressJelly);
         return card;
